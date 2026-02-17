@@ -1,36 +1,57 @@
 .clock-face-container {
+    padding: 40px 60px;
     text-align: center;
-    text-shadow: 0px 2px 4px rgba(0,0,0,0.4);
+    text-shadow: 0px 2px 6px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    background-color: rgba(30, 30, 35, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clock-face-container:hover {
+    background-color: rgba(30, 30, 35, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.clock-dragging {
+    background-color: rgba(40, 40, 50, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .clock-day-label {
     font-family: 'Anurati';
-    font-size: 82px;
+    font-size: 72px;
     color: rgba(255, 255, 255, 0.95);
-    padding-bottom: 24px;
+    padding-bottom: 20px;
+    padding-top: 12px;
     text-align: center;
+    letter-spacing: 12px;
 }
 
 .clock-date-label {
     font-family: 'Noto Sans', sans-serif;
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.75);
-    padding-bottom: 12px;
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.70);
+    padding-bottom: 16px;
     text-align: center;
-    letter-spacing: 2px;
+    letter-spacing: 5px;
 }
 
 .clock-time-label {
     font-family: 'Noto Sans', sans-serif;
-    font-size: 20px;
-    color: rgba(255, 255, 255, 0.65);
+    font-size: 18px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.55);
+    padding-bottom: 8px;
     text-align: center;
-    letter-spacing: 3px;
+    letter-spacing: 6px;
 }
 
 .clock-separator {
-    width: 200px;
+    width: 220px;
     height: 1px;
-    background-color: rgba(255, 255, 255, 0.2);
-    margin: 10px 0;
+    background-color: rgba(255, 255, 255, 0.15);
+    margin-top: 8px;
+    margin-bottom: 8px;
 }
