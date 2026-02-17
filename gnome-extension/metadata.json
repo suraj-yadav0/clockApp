@@ -1,0 +1,14 @@
+{
+  "uuid": "clock-face@suraj.local",
+  "name": "Clock Face Background",
+  "description": "A stylish clock face rendered on the desktop background using the Anurati font.",
+  "shell-version": [
+    "42",
+    "43",
+    "44",
+    "45",
+    "46",
+    "47"
+  ],
+  "url": ""
+}
