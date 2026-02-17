@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Clock Face
+Comment=Stylish desktop clock with geometric design
+Exec=python3 ~/.local/share/clock-face/clock_app.py
+Icon=preferences-system-time
+Terminal=false
+Type=Application
+Categories=Utility;Clock;
+Keywords=clock;time;date;widget;
+StartupNotify=true
