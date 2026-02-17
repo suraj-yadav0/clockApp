@@ -106,11 +106,34 @@ const ClockWidget = GObject.registerClass(
 
 export default class ClockFaceExtension extends Extension {
     enable() {
+        // Debug: log the UI hierarchy to figure out the correct parent
+        const uiChildren = Main.uiGroup.get_children();
+        console.log(`[ClockFace] Main.uiGroup has ${uiChildren.length} children:`);
+        for (let i = 0; i < uiChildren.length; i++) {
+            const child = uiChildren[i];
+            console.log(`[ClockFace]   [${i}] ${child.constructor.name} (${child.toString()})`);
+        }
+        console.log(`[ClockFace] global.window_group = ${global.window_group}`);
+        console.log(`[ClockFace] Main.layoutManager._backgroundGroup = ${Main.layoutManager._backgroundGroup}`);
+
+        // Try all possible background group references
+        let bgGroup = null;
+        if (Main.layoutManager._backgroundGroup) {
+            bgGroup = Main.layoutManager._backgroundGroup;
+            console.log('[ClockFace] Using Main.layoutManager._backgroundGroup');
+        }
+
         this._clockWidget = new ClockWidget();
 
-        // Add to the uiGroup at the very bottom (behind everything).
-        // Insert at index 0 so it's drawn first (behind all other actors).
-        Main.uiGroup.insert_child_at_index(this._clockWidget, 0);
+        if (bgGroup) {
+            // Add as last child of background group (on top of wallpaper)
+            bgGroup.add_child(this._clockWidget);
+            console.log('[ClockFace] Added to _backgroundGroup');
+        } else {
+            // Fallback: insert below window_group in uiGroup
+            Main.uiGroup.insert_child_below(this._clockWidget, global.window_group);
+            console.log('[ClockFace] Fallback: inserted below window_group');
+        }
 
         // Position to fill the primary monitor
         this._repositionClock();
@@ -119,6 +142,9 @@ export default class ClockFaceExtension extends Extension {
         this._monitorsChangedId = Main.layoutManager.connect(
             'monitors-changed', () => this._repositionClock()
         );
+
+        console.log(`[ClockFace] Widget visible: ${this._clockWidget.visible}, opacity: ${this._clockWidget.opacity}`);
+        console.log(`[ClockFace] Widget position: (${this._clockWidget.x}, ${this._clockWidget.y}), size: (${this._clockWidget.width}, ${this._clockWidget.height})`);
     }
 
     _repositionClock() {
@@ -127,6 +153,7 @@ export default class ClockFaceExtension extends Extension {
 
         this._clockWidget.set_position(monitor.x, monitor.y);
         this._clockWidget.set_size(monitor.width, monitor.height);
+        console.log(`[ClockFace] Repositioned to (${monitor.x}, ${monitor.y}) ${monitor.width}x${monitor.height}`);
     }
 
     disable() {
