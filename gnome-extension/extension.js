@@ -259,17 +259,14 @@ export default class ClockFaceExtension extends Extension {
         const configPath = GLib.build_filenamev([configDir, 'position.json']);
 
         this._clockWidget = new ClockWidget(configPath);
-        this._parentContainer = global.window_group;
 
-        // Place above wallpaper (_backgroundGroup) but below windows
-        const bgGroup = Main.layoutManager._backgroundGroup;
-        if (bgGroup) {
-            global.window_group.insert_child_above(this._clockWidget, bgGroup);
-            console.log('[ClockFace] Inserted above _backgroundGroup in window_group');
-        } else {
-            global.window_group.insert_child_at_index(this._clockWidget, 1);
-            console.log('[ClockFace] Fallback: window_group index 1');
-        }
+        // Add to _backgroundGroup — this is the DESKTOP LAYER.
+        // It renders ON the wallpaper, behind ALL windows.
+        // Visible only when you show the desktop (minimize/move windows).
+        this._bgGroup = Main.layoutManager._backgroundGroup;
+        this._bgGroup.add_child(this._clockWidget);
+        // Raise above wallpaper textures within the group
+        this._clockWidget.raise_top();
 
         this._monitorsChangedId = Main.layoutManager.connect(
             'monitors-changed', () => {
@@ -277,7 +274,7 @@ export default class ClockFaceExtension extends Extension {
             }
         );
 
-        console.log('[ClockFace] Extension enabled successfully');
+        console.log('[ClockFace] Added to _backgroundGroup (desktop layer)');
     }
 
     disable() {
@@ -286,10 +283,11 @@ export default class ClockFaceExtension extends Extension {
             this._monitorsChangedId = null;
         }
         if (this._clockWidget) {
-            this._parentContainer.remove_child(this._clockWidget);
+            if (this._bgGroup)
+                this._bgGroup.remove_child(this._clockWidget);
             this._clockWidget.destroy();
             this._clockWidget = null;
         }
-        this._parentContainer = null;
+        this._bgGroup = null;
     }
 }
