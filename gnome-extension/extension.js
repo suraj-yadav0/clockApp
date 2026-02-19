@@ -29,8 +29,8 @@ const ClockWidget = GObject.registerClass(
                 vertical: true,
                 reactive: true,
                 track_hover: true,
-                // Transparent background + Debug Border (RED)
-                style: 'padding: 40px 140px; background-color: transparent; border: 2px solid rgba(255,0,0,0.5);',
+                // Clean look: Transparent background, no border, wide padding
+                style: 'padding: 40px 140px; background-color: transparent;',
             });
 
             this._configPath = configPath;
@@ -42,12 +42,7 @@ const ClockWidget = GObject.registerClass(
             this._dragActorStartY = 0;
 
             // ---- Build clock UI ----
-
-            // Top separator
-            this.add_child(new St.Widget({
-                style: 'width: 600px; height: 1px; background-color: rgba(255,255,255,0.25); margin-bottom: 24px;',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
+            // Removed top/bottom separators as requested for a cleaner look.
 
             // Day label
             this._dayLabel = new St.Label({
@@ -78,12 +73,6 @@ const ClockWidget = GObject.registerClass(
             this._timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
             this.add_child(this._timeLabel);
 
-            // Bottom separator
-            this.add_child(new St.Widget({
-                style: 'width: 600px; height: 1px; background-color: rgba(255,255,255,0.25); margin-top: 14px;',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
-
             // ---- Manual drag support ----
             this.connect('button-press-event', (_actor, event) => {
                 if (event.get_button() === 1) {
@@ -93,6 +82,7 @@ const ClockWidget = GObject.registerClass(
                     this._dragStartY = stageY;
                     this._dragActorStartX = this.x;
                     this._dragActorStartY = this.y;
+                    // Visual feedback: Subtle opacity change
                     this.set_opacity(200);
                     return Clutter.EVENT_STOP;
                 }
