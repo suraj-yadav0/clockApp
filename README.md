@@ -11,6 +11,10 @@ This project provides two ways to display a custom clock on your desktop:
 
 Both implementations share a consistent visual style featuring the Anurati font for the day of the week and Noto Sans for the date/time, set against a dark or transparent background.
 
+<img width="1650" height="677" alt="image" src="https://github.com/user-attachments/assets/57de0d47-2a57-4adb-95b6-224238c087b8" />
+
+
+
 ## Technology Stack
 
 The project utilizes the following technologies:
