@@ -13,7 +13,21 @@ mkdir -p "$INSTALL_DIR"
 # Copy files
 cp "$SOURCE_DIR/metadata.json" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/extension.js" "$INSTALL_DIR/"
+cp "$SOURCE_DIR/prefs.js" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/stylesheet.css" "$INSTALL_DIR/"
+
+# Copy and compile GSettings schema
+SCHEMA_SRC="$SOURCE_DIR/schemas"
+SCHEMA_DEST="$INSTALL_DIR/schemas"
+mkdir -p "$SCHEMA_DEST"
+cp "$SCHEMA_SRC/"*.gschema.xml "$SCHEMA_DEST/"
+
+if command -v glib-compile-schemas &>/dev/null; then
+    glib-compile-schemas "$SCHEMA_DEST"
+    echo "✅ GSettings schemas compiled"
+else
+    echo "⚠️  glib-compile-schemas not found – install glib2 / libglib2.0-dev and rerun."
+fi
 
 echo "✅ Extension files installed to $INSTALL_DIR"
 echo ""
@@ -24,3 +38,6 @@ echo "  - On X11: Press Alt+F2, type 'r', and press Enter."
 echo ""
 echo "Then enable it with:"
 echo "  gnome-extensions enable $EXTENSION_ID"
+echo ""
+echo "Open the settings panel with:"
+echo "  gnome-extensions prefs $EXTENSION_ID"

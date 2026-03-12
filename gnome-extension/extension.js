@@ -24,33 +24,29 @@ const SCALE_STEP = 0.1;
 
 const ClockWidget = GObject.registerClass(
     class ClockWidget extends St.BoxLayout {
-        _init(configPath) {
+        _init(settings) {
             super._init({
                 vertical: true,
                 reactive: true,
                 track_hover: true,
-                // Clean look: Transparent background, no border, wide padding
                 style: 'padding: 40px 140px; background-color: transparent;',
             });
 
-            this._configPath = configPath;
-            this._currentScale = DEFAULT_SCALE;
+            this._settings = settings;
+            this._currentScale = settings.get_double('clock-scale');
             this._isDragging = false;
             this._dragStartX = 0;
             this._dragStartY = 0;
             this._dragActorStartX = 0;
             this._dragActorStartY = 0;
 
-            // ---- Build clock UI ----
-            // Removed top/bottom separators as requested for a cleaner look.
+            // ── Build clock UI ──────────────────────────────────────────────
 
             // Day label
             this._dayLabel = new St.Label({
                 text: '',
                 x_align: Clutter.ActorAlign.CENTER,
-                style: 'font-family: Anurati; font-size: 108px; color: rgba(255,255,255,0.95); padding-bottom: 30px; text-align: center; letter-spacing: 12px; text-shadow: 0px 2px 4px rgba(0,0,0,0.8);',
             });
-            // Important: Disable ellipsize to prevent truncation
             this._dayLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
             this._dayLabel.clutter_text.line_wrap = false;
             this.add_child(this._dayLabel);
@@ -59,7 +55,6 @@ const ClockWidget = GObject.registerClass(
             this._dateLabel = new St.Label({
                 text: '',
                 x_align: Clutter.ActorAlign.CENTER,
-                style: 'font-size: 20px; font-weight: 500; color: rgba(255,255,255,0.85); padding-bottom: 24px; text-align: center; letter-spacing: 8px; text-shadow: 0px 1px 2px rgba(0,0,0,0.8);',
             });
             this._dateLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
             this.add_child(this._dateLabel);
@@ -68,12 +63,11 @@ const ClockWidget = GObject.registerClass(
             this._timeLabel = new St.Label({
                 text: '',
                 x_align: Clutter.ActorAlign.CENTER,
-                style: 'font-size: 24px; font-weight: 300; color: rgba(255,255,255,0.75); padding-bottom: 16px; text-align: center; letter-spacing: 8px; text-shadow: 0px 1px 2px rgba(0,0,0,0.8);',
             });
             this._timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
             this.add_child(this._timeLabel);
 
-            // ---- Manual drag support ----
+            // ── Manual drag support ─────────────────────────────────────────
             this.connect('button-press-event', (_actor, event) => {
                 if (event.get_button() === 1) {
                     this._isDragging = true;
@@ -82,7 +76,6 @@ const ClockWidget = GObject.registerClass(
                     this._dragStartY = stageY;
                     this._dragActorStartX = this.x;
                     this._dragActorStartY = this.y;
-                    // Visual feedback: Subtle opacity change
                     this.set_opacity(200);
                     return Clutter.EVENT_STOP;
                 }
@@ -106,14 +99,15 @@ const ClockWidget = GObject.registerClass(
             this.connect('button-release-event', (_actor, event) => {
                 if (event.get_button() === 1 && this._isDragging) {
                     this._isDragging = false;
-                    this.set_opacity(255);
-                    this._saveConfig();
+                    this._applyOpacity();
+                    this._savePosition();
                     return Clutter.EVENT_STOP;
                 }
                 return Clutter.EVENT_PROPAGATE;
             });
 
-            // ---- Scroll-to-resize ----
+            // ── Scroll-to-resize ────────────────────────────────────────────
+            this._scrollSaveId = null;
             this.connect('scroll-event', (_actor, event) => {
                 const dir = event.get_scroll_direction();
                 let s = this._currentScale;
@@ -125,87 +119,181 @@ const ClockWidget = GObject.registerClass(
                     return Clutter.EVENT_PROPAGATE;
                 this._currentScale = s;
                 this.set_scale(s, s);
-                this._saveConfig();
+                // Debounce: only write to GSettings 400 ms after the last scroll tick
+                if (this._scrollSaveId !== null) {
+                    GLib.source_remove(this._scrollSaveId);
+                    this._scrollSaveId = null;
+                }
+                this._scrollSaveId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+                    this._settings.set_double('clock-scale',
+                        Math.round(this._currentScale * 100) / 100);
+                    this._scrollSaveId = null;
+                    return GLib.SOURCE_REMOVE;
+                });
                 return Clutter.EVENT_STOP;
             });
 
-            // ---- Load config ----
-            this._loadConfig();
+            // ── Watch settings changes ──────────────────────────────────────
+            this._settingsChangedId = this._settings.connect(
+                'changed', (_s, key) => this._onSettingChanged(key)
+            );
 
-            // ---- Clock update ----
+            // ── Apply initial appearance & position ─────────────────────────
+            this._applyAppearance();
+            this._applyPosition();
+
+            // ── Clock update ────────────────────────────────────────────────
             this._updateClock();
-            this._timeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+            this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
                 this._updateClock();
                 return GLib.SOURCE_CONTINUE;
             });
         }
+
+        // ── Settings helpers ────────────────────────────────────────────────
+
+        _onSettingChanged(key) {
+            switch (key) {
+            case 'day-color':
+            case 'date-color':
+            case 'time-color':
+            case 'font-family':
+                this._applyLabelStyles();
+                break;
+            case 'clock-opacity':
+                this._applyOpacity();
+                break;
+            case 'clock-scale':
+                this._applyScale();
+                break;
+            case 'clock-x':
+            case 'clock-y':
+                this._applyPosition();
+                break;
+            case 'time-format':
+            case 'show-seconds':
+                this._updateClock();
+                break;
+            }
+        }
+
+        _applyAppearance() {
+            this._applyLabelStyles();
+            this._applyOpacity();
+            this._applyScale();
+        }
+
+        _applyLabelStyles() {
+            const dayColor  = this._settings.get_string('day-color');
+            const dateColor = this._settings.get_string('date-color');
+            const timeColor = this._settings.get_string('time-color');
+            const font      = this._settings.get_string('font-family');
+
+            this._dayLabel.set_style(
+                `font-family: ${font}; font-size: 108px; color: ${dayColor}; ` +
+                'padding-bottom: 30px; text-align: center; letter-spacing: 12px; ' +
+                'text-shadow: 0px 2px 4px rgba(0,0,0,0.8);'
+            );
+            this._dateLabel.set_style(
+                `font-size: 20px; font-weight: 500; color: ${dateColor}; ` +
+                'padding-bottom: 24px; text-align: center; letter-spacing: 8px; ' +
+                'text-shadow: 0px 1px 2px rgba(0,0,0,0.8);'
+            );
+            this._timeLabel.set_style(
+                `font-size: 24px; font-weight: 300; color: ${timeColor}; ` +
+                'padding-bottom: 16px; text-align: center; letter-spacing: 8px; ' +
+                'text-shadow: 0px 1px 2px rgba(0,0,0,0.8);'
+            );
+        }
+
+        _applyOpacity() {
+            const opacity = this._settings.get_double('clock-opacity');
+            this.set_opacity(Math.round(Math.max(0, Math.min(1, opacity)) * 255));
+        }
+
+        _applyScale() {
+            const scale = this._settings.get_double('clock-scale');
+            this._currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+            this.set_scale(this._currentScale, this._currentScale);
+        }
+
+        _applyPosition() {
+            const x = this._settings.get_int('clock-x');
+            const y = this._settings.get_int('clock-y');
+            if (x === 0 && y === 0) {
+                // First-time default: place near top-left of primary monitor
+                const mon = Main.layoutManager.primaryMonitor;
+                if (mon) {
+                    this.set_position(mon.x + 200, mon.y + 200);
+                    this._savePosition();
+                } else {
+                    this.set_position(200, 200);
+                }
+            } else {
+                this.set_position(x, y);
+            }
+        }
+
+        _savePosition() {
+            this._settings.set_int('clock-x', Math.round(this.x));
+            this._settings.set_int('clock-y', Math.round(this.y));
+        }
+
+        // ── Clock display ───────────────────────────────────────────────────
 
         _updateClock() {
             const now = GLib.DateTime.new_now_local();
             const dow = now.get_day_of_week();
             const dayIndex = dow === 7 ? 0 : dow;
 
-            const dayNum = now.get_day_of_month();
+            const dayNum    = now.get_day_of_month();
             const monthName = MONTHS[now.get_month() - 1];
-            const year = now.get_year();
+            const year      = now.get_year();
 
-            let hour = now.get_hour();
+            const use24h   = this._settings.get_string('time-format') === '24h';
+            const showSecs = this._settings.get_boolean('show-seconds');
+
+            let hour    = now.get_hour();
             const minute = now.get_minute();
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            hour = hour % 12 || 12;
-            const mm = minute < 10 ? `0${minute}` : `${minute}`;
+            const second = now.get_second();
+
+            let timeParts;
+            if (use24h) {
+                const hh = hour   < 10 ? `0${hour}`   : `${hour}`;
+                const mm = minute < 10 ? `0${minute}` : `${minute}`;
+                if (showSecs) {
+                    const ss = second < 10 ? `0${second}` : `${second}`;
+                    timeParts = `-   ${hh}:${mm}:${ss}   -`;
+                } else {
+                    timeParts = `-   ${hh}:${mm}   -`;
+                }
+            } else {
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12 || 12;
+                const hh = `${hour}`;
+                const mm = minute < 10 ? `0${minute}` : `${minute}`;
+                if (showSecs) {
+                    const ss = second < 10 ? `0${second}` : `${second}`;
+                    timeParts = `-   ${hh}:${mm}:${ss}  ${ampm}   -`;
+                } else {
+                    timeParts = `-   ${hh}:${mm}  ${ampm}   -`;
+                }
+            }
 
             this._dayLabel.set_text(DAYS[dayIndex]);
             this._dateLabel.set_text(`${dayNum}   ${monthName},   ${year}.`);
-            this._timeLabel.set_text(`-   ${hour}:${mm}  ${ampm}   -`);
-        }
-
-        _loadConfig() {
-            try {
-                const file = Gio.File.new_for_path(this._configPath);
-                if (file.query_exists(null)) {
-                    const [ok, bytes] = file.load_contents(null);
-                    if (ok) {
-                        const cfg = JSON.parse(new TextDecoder().decode(bytes));
-                        this.set_position(cfg.x ?? 200, cfg.y ?? 200);
-                        this._currentScale = cfg.scale ?? DEFAULT_SCALE;
-                        this.set_scale(this._currentScale, this._currentScale);
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.log(`[ClockFace] config load error: ${e.message}`);
-            }
-            const mon = Main.layoutManager.primaryMonitor;
-            if (mon)
-                this.set_position(mon.x + 200, mon.y + 200);
-            else
-                this.set_position(200, 200);
-        }
-
-        _saveConfig() {
-            try {
-                const cfg = {
-                    x: Math.round(this.x),
-                    y: Math.round(this.y),
-                    scale: Math.round(this._currentScale * 100) / 100,
-                };
-                const file = Gio.File.new_for_path(this._configPath);
-                const parent = file.get_parent();
-                if (!parent.query_exists(null))
-                    parent.make_directory_with_parents(null);
-                file.replace_contents(
-                    JSON.stringify(cfg, null, 2),
-                    null, false,
-                    Gio.FileCreateFlags.REPLACE_DESTINATION,
-                    null
-                );
-            } catch (e) {
-                console.log(`[ClockFace] config save error: ${e.message}`);
-            }
+            this._timeLabel.set_text(timeParts);
         }
 
         destroy() {
+            if (this._settingsChangedId) {
+                this._settings.disconnect(this._settingsChangedId);
+                this._settingsChangedId = null;
+            }
+            if (this._scrollSaveId !== null) {
+                GLib.source_remove(this._scrollSaveId);
+                this._scrollSaveId = null;
+            }
             if (this._timeoutId) {
                 GLib.source_remove(this._timeoutId);
                 this._timeoutId = null;
@@ -216,29 +304,24 @@ const ClockWidget = GObject.registerClass(
 
 export default class ClockFaceExtension extends Extension {
     enable() {
-        const configDir = GLib.build_filenamev([
-            GLib.get_user_config_dir(), 'clock-face',
-        ]);
-        const configPath = GLib.build_filenamev([configDir, 'position.json']);
+        const settings = this.getSettings();
 
-        this._clockWidget = new ClockWidget(configPath);
+        this._clockWidget = new ClockWidget(settings);
 
-        // Use _backgroundGroup for correct Desktop Layering
-        // This puts it BEHIND all windows, on the wallpaper
+        // Place the widget behind all windows, on the wallpaper layer
         this._bgGroup = Main.layoutManager._backgroundGroup;
 
         if (this._bgGroup) {
             this._bgGroup.add_child(this._clockWidget);
-            this._clockWidget.raise_top(); // Top of BACKGROUND, still below windows
+            this._clockWidget.raise_top();
             console.log('[ClockFace] Added to _backgroundGroup');
         } else {
-            // Fallback (shouldn't happen on standard GNOME 46)
+            // Fallback
             this._parentContainer = global.window_group;
-            if (this._parentContainer.get_n_children() > 0) {
+            if (this._parentContainer.get_n_children() > 0)
                 this._parentContainer.insert_child_at_index(this._clockWidget, 1);
-            } else {
+            else
                 this._parentContainer.add_child(this._clockWidget);
-            }
             console.log('[ClockFace] Fallback to window_group');
         }
 
@@ -255,11 +338,10 @@ export default class ClockFaceExtension extends Extension {
             this._monitorsChangedId = null;
         }
         if (this._clockWidget) {
-            if (this._bgGroup) {
+            if (this._bgGroup)
                 this._bgGroup.remove_child(this._clockWidget);
-            } else if (this._parentContainer) {
+            else if (this._parentContainer)
                 this._parentContainer.remove_child(this._clockWidget);
-            }
             this._clockWidget.destroy();
             this._clockWidget = null;
         }

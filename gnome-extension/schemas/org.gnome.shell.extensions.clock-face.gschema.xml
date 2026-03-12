@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.clock-face"
+          path="/org/gnome/shell/extensions/clock-face/">
+
+    <!-- Position -->
+    <key name="clock-x" type="i">
+      <default>200</default>
+      <summary>Clock X position</summary>
+      <description>Horizontal position of the clock widget on screen.</description>
+    </key>
+    <key name="clock-y" type="i">
+      <default>200</default>
+      <summary>Clock Y position</summary>
+      <description>Vertical position of the clock widget on screen.</description>
+    </key>
+
+    <!-- Scale -->
+    <key name="clock-scale" type="d">
+      <default>1.0</default>
+      <summary>Clock scale factor</summary>
+      <description>Zoom level of the entire clock (0.3 – 5.0).</description>
+    </key>
+
+    <!-- Colors (stored as CSS rgba strings, e.g. "rgba(255,255,255,0.95)") -->
+    <key name="day-color" type="s">
+      <default>'rgba(255,255,255,0.95)'</default>
+      <summary>Day label color</summary>
+      <description>CSS color for the day-of-week label.</description>
+    </key>
+    <key name="date-color" type="s">
+      <default>'rgba(255,255,255,0.85)'</default>
+      <summary>Date label color</summary>
+      <description>CSS color for the date label.</description>
+    </key>
+    <key name="time-color" type="s">
+      <default>'rgba(255,255,255,0.75)'</default>
+      <summary>Time label color</summary>
+      <description>CSS color for the time label.</description>
+    </key>
+
+    <!-- Font -->
+    <key name="font-family" type="s">
+      <default>'Anurati'</default>
+      <summary>Day label font family</summary>
+      <description>Font family used for the day-of-week label.</description>
+    </key>
+
+    <!-- Opacity -->
+    <key name="clock-opacity" type="d">
+      <default>1.0</default>
+      <summary>Overall clock opacity</summary>
+      <description>Master opacity for the entire clock widget (0.0 – 1.0).</description>
+    </key>
+
+    <!-- Time format -->
+    <key name="time-format" type="s">
+      <default>'12h'</default>
+      <summary>Time format</summary>
+      <description>Display time in 12-hour ("12h") or 24-hour ("24h") format.</description>
+    </key>
+
+    <!-- Show seconds -->
+    <key name="show-seconds" type="b">
+      <default>false</default>
+      <summary>Show seconds</summary>
+      <description>Whether to include seconds in the time display.</description>
+    </key>
+
+  </schema>
+</schemalist>
