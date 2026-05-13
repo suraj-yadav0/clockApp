@@ -2,7 +2,7 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
-import { ExtensionPreferences } from 'resource:///org/gnome/shell/extensions/prefs.js';
+import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
