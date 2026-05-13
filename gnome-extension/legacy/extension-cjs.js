@@ -1,11 +1,12 @@
-import Clutter from 'gi://Clutter';
-import GObject from 'gi://GObject';
-import St from 'gi://St';
-import Pango from 'gi://Pango';
-import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+const Clutter = imports.gi.Clutter;
+const GObject = imports.gi.GObject;
+const St = imports.gi.St;
+const Pango = imports.gi.Pango;
+const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const Main = imports.ui.main;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
 
 const MONTHS = [
     'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
@@ -302,7 +303,14 @@ const ClockWidget = GObject.registerClass(
         }
     });
 
-export default class ClockFaceExtension extends Extension {
+class ClockFaceExtension {
+    constructor() {
+        this._settings = ExtensionUtils.getSettings('org.gnome.shell.extensions.clock-face');
+    }
+
+    getSettings() {
+        return this._settings;
+    }
     enable() {
         const settings = this.getSettings();
 
@@ -352,4 +360,9 @@ export default class ClockFaceExtension extends Extension {
         this._bgGroup = null;
         this._parentContainer = null;
     }
+}
+
+
+function init() {
+    return new ClockFaceExtension();
 }

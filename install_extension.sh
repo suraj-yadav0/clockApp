@@ -11,10 +11,35 @@ echo "🧩 Installing Clock Face Extension..."
 mkdir -p "$INSTALL_DIR"
 
 # Copy files
+GNOME_VERSION_FULL=$(gnome-shell --version | grep -oP '[0-9]+(\.[0-9]+)?' | head -n1)
+GNOME_MAJOR=$(echo "$GNOME_VERSION_FULL" | cut -d. -f1)
+
+if [ -z "$GNOME_MAJOR" ]; then
+    echo "⚠️  Could not detect GNOME Shell version. Defaulting to ESM (GNOME 45+)."
+    GNOME_MAJOR=45
+fi
+
+# Copy base files
 cp "$SOURCE_DIR/metadata.json" "$INSTALL_DIR/"
-cp "$SOURCE_DIR/extension.js" "$INSTALL_DIR/"
-cp "$SOURCE_DIR/prefs.js" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/stylesheet.css" "$INSTALL_DIR/"
+
+if [ "$GNOME_MAJOR" = "3" ]; then
+    echo "ℹ️  Detected GNOME 3.x (GTK3). Installing legacy version."
+    cp "$SOURCE_DIR/legacy/extension-cjs.js" "$INSTALL_DIR/extension.js"
+    cp "$SOURCE_DIR/legacy/prefs-gtk3.js" "$INSTALL_DIR/prefs.js"
+elif [ "$GNOME_MAJOR" -lt "42" ]; then
+    echo "ℹ️  Detected GNOME 40/41 (GTK3). Installing legacy version."
+    cp "$SOURCE_DIR/legacy/extension-cjs.js" "$INSTALL_DIR/extension.js"
+    cp "$SOURCE_DIR/legacy/prefs-gtk3.js" "$INSTALL_DIR/prefs.js"
+elif [ "$GNOME_MAJOR" -lt "45" ]; then
+    echo "ℹ️  Detected GNOME 42-44 (Adwaita, CJS). Installing legacy Adwaita version."
+    cp "$SOURCE_DIR/legacy/extension-cjs.js" "$INSTALL_DIR/extension.js"
+    cp "$SOURCE_DIR/legacy/prefs-adw.js" "$INSTALL_DIR/prefs.js"
+else
+    echo "ℹ️  Detected GNOME 45+ (ESM). Installing modern version."
+    cp "$SOURCE_DIR/extension.js" "$INSTALL_DIR/extension.js"
+    cp "$SOURCE_DIR/prefs.js" "$INSTALL_DIR/prefs.js"
+fi
 
 # Copy and compile GSettings schema
 SCHEMA_SRC="$SOURCE_DIR/schemas"
