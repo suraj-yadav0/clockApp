@@ -229,7 +229,6 @@ export default class ClockFaceExtension extends Extension {
 
         if (this._bgGroup) {
             this._bgGroup.add_child(this._clockWidget);
-            this._clockWidget.raise_top(); // Top of BACKGROUND, still below windows
             console.log('[ClockFace] Added to _backgroundGroup');
         } else {
             // Fallback (shouldn't happen on standard GNOME 46)
@@ -242,18 +241,10 @@ export default class ClockFaceExtension extends Extension {
             console.log('[ClockFace] Fallback to window_group');
         }
 
-        this._monitorsChangedId = Main.layoutManager.connect(
-            'monitors-changed', () => { }
-        );
-
         console.log('[ClockFace] Extension enabled');
     }
 
     disable() {
-        if (this._monitorsChangedId) {
-            Main.layoutManager.disconnect(this._monitorsChangedId);
-            this._monitorsChangedId = null;
-        }
         if (this._clockWidget) {
             if (this._bgGroup) {
                 this._bgGroup.remove_child(this._clockWidget);
