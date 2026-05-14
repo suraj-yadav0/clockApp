@@ -16,7 +16,7 @@ You can install this extension easily using the provided installation script. Th
 
 1. Clone or download this repository:
    ```bash
-   git clone https://github.com/yourusername/clockApp.git
+   git clone https://github.com/suraj-yadav0/clockApp.git
    cd clockApp
    ```
 
