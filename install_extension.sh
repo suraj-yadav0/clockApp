@@ -41,6 +41,17 @@ else
     cp "$SOURCE_DIR/prefs.js" "$INSTALL_DIR/prefs.js"
 fi
 
+# Install custom fonts
+FONT_DEST="$HOME/.local/share/fonts"
+mkdir -p "$FONT_DEST"
+if [ -f "$SOURCE_DIR/Anurati-Regular.otf" ]; then
+    echo "🅰️  Installing custom font (Anurati)..."
+    cp "$SOURCE_DIR/Anurati-Regular.otf" "$FONT_DEST/"
+    if command -v fc-cache &>/dev/null; then
+        fc-cache -f "$FONT_DEST"
+    fi
+fi
+
 # Copy and compile GSettings schema
 SCHEMA_SRC="$SOURCE_DIR/schemas"
 SCHEMA_DEST="$INSTALL_DIR/schemas"
