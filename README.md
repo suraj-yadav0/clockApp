@@ -12,18 +12,21 @@ A stylish, minimalist clock face rendered directly on your GNOME desktop backgro
 
 ## Installation
 
-You can install this extension easily using the provided installation script. The script compiles any necessary schemas and moves the extension to your local extensions folder.
+### ⚡ Quick One-Line Installation (Recommended)
+Run this single command in your terminal:
+```bash
+curl -fsSL https://raw.githubusercontent.com/suraj-yadav0/clockApp/main/install.sh | bash
+```
 
-1. Clone or download this repository:
-   ```bash
-   git clone https://github.com/suraj-yadav0/clockApp.git
-   cd clockApp
-   ```
+---
 
-2. Run the installer:
-   ```bash
-   ./install.sh
-   ```
+### 📦 Manual Installation
+If you prefer to clone the repository manually:
+```bash
+git clone https://github.com/suraj-yadav0/clockApp.git
+cd clockApp
+./install.sh
+```
 
 3. Restart GNOME Shell (if on X11/Xorg, press `Alt+F2`, type `r`, and press `Enter`. If on Wayland, you may need to log out and log back in).
 

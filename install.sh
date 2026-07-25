@@ -3,15 +3,46 @@
 
 EXTENSION_ID="clock-face@suraj.local"
 INSTALL_DIR="$HOME/.local/share/gnome-shell/extensions/$EXTENSION_ID"
-SOURCE_DIR="$(cd "$(dirname "$0")/gnome-extension" && pwd)"
+REPO_URL="https://github.com/suraj-yadav0/clockApp.git"
+
+TEMP_DIR=""
+cleanup() {
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
+}
+trap cleanup EXIT
 
 echo "🧩 Installing Clock Face Extension..."
+
+# Determine source directory (handles local run and curl | bash pipe)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+
+if [ -d "$SCRIPT_DIR/gnome-extension" ]; then
+    SOURCE_DIR="$SCRIPT_DIR/gnome-extension"
+else
+    echo "🌐 Remote execution detected. Fetching latest files..."
+    TEMP_DIR=$(mktemp -d)
+    if command -v git &>/dev/null; then
+        git clone --depth 1 "$REPO_URL" "$TEMP_DIR/clockApp" &>/dev/null || {
+            echo "❌ Failed to clone repository."
+            exit 1
+        }
+    else
+        curl -sSL "https://github.com/suraj-yadav0/clockApp/archive/refs/heads/main.tar.gz" | tar -xz -C "$TEMP_DIR" || {
+            echo "❌ Failed to download source code."
+            exit 1
+        }
+        mv "$TEMP_DIR"/clockApp-main "$TEMP_DIR/clockApp" 2>/dev/null || true
+    fi
+    SOURCE_DIR="$TEMP_DIR/clockApp/gnome-extension"
+fi
 
 # Create destination directory
 mkdir -p "$INSTALL_DIR"
 
-# Copy files
-GNOME_VERSION_FULL=$(gnome-shell --version | grep -oP '[0-9]+(\.[0-9]+)?' | head -n1)
+# Detect GNOME Shell Version
+GNOME_VERSION_FULL=$(gnome-shell --version 2>/dev/null | grep -oP '[0-9]+(\.[0-9]+)?' | head -n1)
 GNOME_MAJOR=$(echo "$GNOME_VERSION_FULL" | cut -d. -f1)
 
 if [ -z "$GNOME_MAJOR" ]; then
@@ -60,20 +91,25 @@ cp "$SCHEMA_SRC/"*.gschema.xml "$SCHEMA_DEST/"
 
 if command -v glib-compile-schemas &>/dev/null; then
     glib-compile-schemas "$SCHEMA_DEST"
-    echo "✅ GSettings schemas compiled"
+    echo "✅ GSettings schemas compiled."
 else
     echo "⚠️  glib-compile-schemas not found – install glib2 / libglib2.0-dev and rerun."
 fi
 
-echo "✅ Extension files installed to $INSTALL_DIR"
+# Try enabling extension automatically
+if command -v gnome-extensions &>/dev/null; then
+    gnome-extensions enable "$EXTENSION_ID" &>/dev/null
+fi
+
+echo "✅ Extension files successfully installed to $INSTALL_DIR"
 echo ""
 echo "⚠️  IMPORTANT:"
-echo "To enable the extension, you may need to restart GNOME Shell."
-echo "  - On Wayland: Log out and log back in."
+echo "To activate the extension, you may need to restart GNOME Shell."
+echo "  - On Wayland: Log out and log back in (or lock & unlock screen)."
 echo "  - On X11: Press Alt+F2, type 'r', and press Enter."
 echo ""
-echo "Then enable it with:"
+echo "Enable manually (if not enabled):"
 echo "  gnome-extensions enable $EXTENSION_ID"
 echo ""
-echo "Open the settings panel with:"
+echo "Open Preferences:"
 echo "  gnome-extensions prefs $EXTENSION_ID"
